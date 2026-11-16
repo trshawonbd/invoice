@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Vlog 01 v2: smooth crossfades, levelled ambient sound, proper fade-out ending."""
+"""Vlog 01 v3 (full story): smooth crossfades, levelled ambient sound, proper fade-out ending."""
 import subprocess, sys
 C, S, OUT = sys.argv[1:4]
 T = 0.4  # crossfade
 segs = [  # file, start, dur  (faceless parts only)
-    ("IMG_1382", 0.3, 3.0),
-    ("IMG_1376", 2.0, 3.5),
-    ("IMG_1401", 22.5, 4.0),
-    ("IMG_1402", 2.0, 5.0),
-    ("IMG_1402", 24.0, 4.5),
-    ("IMG_1402", 30.0, 3.5),
+    ("IMG_1382", 0.3, 3.5),   # sky + farm, opening
+    ("IMG_1380", 0.2, 2.9),   # garden view (cut before a person walks in)
+    ("IMG_1376", 2.0, 3.5),   # alpacas
+    ("IMG_1392", 4.0, 3.5),   # chickens
+    ("IMG_1401", 22.5, 4.0),  # geese in the sun
+    ("IMG_1402", 2.0, 5.0),   # son watching geese (from behind)
+    ("IMG_1402", 24.0, 4.5),  # sunny field
+    ("IMG_1404", 3.5, 4.5),   # walker (from behind)
+    ("IMG_1402", 30.0, 3.5),  # walking away hand in hand
+    ("IMG_1402", 36.8, 3.0),  # wide closing shot
 ]
 n = len(segs)
 cmd = ["ffmpeg", "-v", "error", "-y"]
@@ -39,7 +43,7 @@ for i in range(n):
 fc.append(f"[{pv}]fade=out:st={total-0.8:.2f}:d=0.8,format=yuv420p[v]")
 fc.append(f"[{pa}]loudnorm=I=-18:TP=-1.5:LRA=7,afade=in:d=0.3,afade=out:st={total-1.2:.2f}:d=1.2[a]")
 cmd += ["-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]", "-t", f"{total}",
-        "-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p",
+        "-c:v", "libx264", "-preset", "slow", "-crf", "21", "-maxrate", "12M", "-bufsize", "24M", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", OUT]
 subprocess.run(cmd, check=True)
 print("total", total)
