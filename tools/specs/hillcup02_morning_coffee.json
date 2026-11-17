@@ -1,0 +1,54 @@
+{
+ "grade": "eq=contrast=1.07:saturation=1.16:gamma=1.02,colorbalance=rm=0.03:bm=-0.03",
+ "segs": [
+  {
+   "src": "clips/set3/IMG_1639.mov",
+   "ss": 0.4,
+   "d": 2.4,
+   "cap": "ইউরোপের ঠান্ডা সকাল"
+  },
+  {
+   "src": "clips/set3/IMG_1641.mov",
+   "ss": 3.0,
+   "d": 2.8,
+   "tr": "smoothleft",
+   "cap": "হাঁটার পথে কফি মেশিন"
+  },
+  {
+   "src": "clips/set3/IMG_1643.mov",
+   "ss": 0.2,
+   "d": 2.3,
+   "tr": "slideup",
+   "td": 0.3,
+   "cap": "পছন্দের কফি বেছে নিলাম",
+   "zh": 2100,
+   "cy": 180
+  },
+  {
+   "src": "clips/set3/IMG_1645.mov",
+   "ss": 9.0,
+   "d": 3.2,
+   "tr": "hblur",
+   "grade": "eq=gamma=1.12",
+   "cap": "কফি তৈরি হচ্ছে..."
+  },
+  {
+   "src": "clips/set3/IMG_1646.mov",
+   "ss": 3.8,
+   "d": 3.0,
+   "tr": "dissolve",
+   "grade": "eq=gamma=1.12",
+   "cap": "গরম কফি রেডি"
+  },
+  {
+   "src": "clips/set3/IMG_1648.mov",
+   "ss": 0.1,
+   "d": 3.7,
+   "tr": "fade",
+   "td": 0.5,
+   "cap": "কফি ছাড়া সকাল জমে না",
+   "tag": "HILLCUP COFFEE",
+   "cx": 0
+  }
+ ]
+}
