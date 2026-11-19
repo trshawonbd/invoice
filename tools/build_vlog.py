@@ -2,10 +2,11 @@
 """Build a 9:16 vlog from a JSON spec: usage build_vlog.py <spec.json> <captions_dir> <out.mp4>
 
 Each segment: src, ss, d, tr (transition INTO it), td (transition secs), grade, cap/title text,
-optional photo=true (still image with slow zoom; sound taken from asrc/ass).
+optional photo=true (still image with slow zoom; sound taken from asrc/ass),
+optional vo (voiceover line, spoken from the start of that segment; clips made by tts.py as vo<i>.mp3).
 Sound: real ambient audio, levelled per clip, crossfaded, faded out at the end.
 """
-import json, subprocess, sys
+import json, os, subprocess, sys
 spec_path, capdir, out = sys.argv[1:4]
 spec = json.load(open(spec_path)); segs = spec["segs"]; n = len(segs)
 BASE = spec.get("grade", "")
@@ -58,7 +59,26 @@ for i, s in enumerate(segs):
     fc.append(f"[{capbase+i}:v]format=rgba,fade=in:st={a:.2f}:d=0.3:alpha=1,fade=out:st={b:.2f}:d=0.3:alpha=1[c{i}]")
     fc.append(f"[{pv}][c{i}]overlay=shortest=0:eof_action=pass[o{i}]"); pv = f"o{i}"
 fc.append(f"[{pv}]fade=in:st=0:d=0.4,fade=out:st={total-0.8:.2f}:d=0.8,format=yuv420p[v]")
-fc.append(f"[{pa}]loudnorm=I=-18:TP=-1.5:LRA=7,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
+# --- AI voiceover: each line starts with its segment; ambient sound ducks under the voice ---
+vos = [i for i, s in enumerate(segs) if s.get("vo") and os.path.exists(f"{capdir}/vo{i}.mp3")]
+if vos:
+    vbase = capbase + n
+    labels = []
+    for j, i in enumerate(vos):
+        f = f"{capdir}/vo{i}.mp3"; cmd += ["-i", f]
+        dur = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]))
+        at = starts[i] + (0.45 if i else 0.6)
+        nxt = (starts[vos[j + 1]] + 0.45) if j < len(vos) - 1 else total - 0.5
+        tempo = min(max(dur / (nxt - at - 0.15), spec.get("vo_tempo", 1.12)), 1.4)
+        if dur / tempo > nxt - at: print(f"WARNING: voice line {i} is too long for its scene ({dur/tempo:.1f}s > {nxt-at:.1f}s)")
+        fc.append(f"[{vbase+j}:a]atempo={tempo:.3f},aresample=48000,aformat=channel_layouts=stereo,adelay={int(at*1000)}:all=1[vo{j}]")
+        labels.append(f"[vo{j}]")
+    fc.append(f"{''.join(labels)}amix=inputs={len(vos)}:normalize=0:dropout_transition=0,apad=whole_dur={total},loudnorm=I=-15:TP=-1.5,asplit[voa][vob]")
+    fc.append(f"[{pa}]loudnorm=I=-21:TP=-2:LRA=7[amb]")
+    fc.append("[amb][voa]sidechaincompress=threshold=0.015:ratio=10:attack=40:release=450[duck]")
+    fc.append(f"[duck][vob]amix=inputs=2:normalize=0:duration=first,alimiter=limit=0.9,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
+else:
+    fc.append(f"[{pa}]loudnorm=I=-18:TP=-1.5:LRA=7,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
 cmd += ["-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]", "-t", f"{total}",
         "-c:v", "libx264", "-preset", "slow", "-crf", "21", "-maxrate", "12M", "-bufsize", "24M",
         "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
