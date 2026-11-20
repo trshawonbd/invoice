@@ -22,6 +22,14 @@ and hand him finished files, not options. Never present work as checked when it 
 5. **Music** - original instrumental from ACE-Step (local, free, Apache-2.0). Match the mood; tempo sets the cut grid.
 6. **Edit** - write the spec, build, check, fix, deliver.
 
+## Sound taste: he decides, you cannot hear
+
+You cannot hear audio, only measure it. He found the synthesized transition SFX and the ACE-Step (CPU, 8-step)
+track ugly. So by default: **no SFX, no generated music** (`"sfx": false`, no `music`). Deliver voice + real sound,
+ready for him to add a licensed song inside Instagram/Facebook/YouTube. Use music only from a track he picked and
+sent (royalty-free, e.g. YouTube Audio Library / Pixabay Music): then set `music`, `bpm`, `beat_align` and cut on its beat.
+Offer ACE-Step only as short samples for him to choose from, never straight into a video.
+
 ## House rules
 
 - 1080x1920, H.264 MP4, 30 fps. Personal vlog 30-45 s; Hillcup Coffee page version max 20 s; never under 10 s.
