@@ -55,7 +55,7 @@ for i, s in enumerate(segs):
         subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["ss"]), "-t", str(s["d"]), "-i", s["src"],
                         "-vf", f"scale=-2:{zh}:flags=lanczos,crop=1080:1920:{cx}:{cy},{conv}{g},setsar=1,fps=30,format=yuv420p",
                         "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-c:a", "pcm_s16le", "-ar", "48000", proxy], check=True)
-        fc.append(f"[{i}:v]settb=AVTB,fps=30,format=yuv420p[v{i}]")
+        fc.append(f"[{i}:v]fps=30,format=yuv420p,settb=AVTB[v{i}]")
     a = aidx.get(i, i)
     fc.append(f"[{a}:a]aformat=sample_rates=48000:channel_layouts=stereo,highpass=f=90,dynaudnorm=f=300:g=21:m=6:p=0.5[a{i}]")
 pv, pa = "v0", "a0"
@@ -85,10 +85,12 @@ if vos:
         if dur / tempo > nxt - at: print(f"WARNING: voice line {i} is too long for its scene ({dur/tempo:.1f}s > {nxt-at:.1f}s)")
         fc.append(f"[{vbase+j}:a]atempo={tempo:.3f},aresample=48000,aformat=channel_layouts=stereo,adelay={int(at*1000)}:all=1[vo{j}]")
         labels.append(f"[vo{j}]")
-    fc.append(f"{''.join(labels)}amix=inputs={len(vos)}:normalize=0:dropout_transition=0,apad=whole_dur={total},loudnorm=I=-15:TP=-1.5,asplit[voa][vob]")
-    fc.append(f"[{pa}]loudnorm=I=-21:TP=-2:LRA=7[amb]")
-    fc.append("[amb][voa]sidechaincompress=threshold=0.015:ratio=10:attack=40:release=450[duck]")
-    fc.append(f"[duck][vob]amix=inputs=2:normalize=0:duration=first,alimiter=limit=0.9,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
+    fc.append(f"{''.join(labels)}amix=inputs={len(vos)}:normalize=0:dropout_transition=0,apad=whole_dur={total},loudnorm=I=-15:TP=-1.5,apad=whole_dur={total},asplit[voa][vob]")
+    fc.append(f"[{pa}]loudnorm=I=-21:TP=-2:LRA=7,apad=whole_dur={total}[amb]")  # apad after loudnorm keeps its last ~3 s from being dropped
+    # pad both sides to full length: sidechaincompress stops at the shorter input, which cut the last line short
+    fc.append(f"[amb]apad=whole_dur={total}[ambp]")
+    fc.append("[ambp][voa]sidechaincompress=threshold=0.015:ratio=10:attack=40:release=450[duck]")
+    fc.append(f"[duck][vob]amix=inputs=2:normalize=0:duration=longest,apad=whole_dur={total},atrim=0:{total},alimiter=limit=0.9,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
 else:
     fc.append(f"[{pa}]loudnorm=I=-18:TP=-1.5:LRA=7,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
 cmd += ["-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]", "-t", f"{total}",

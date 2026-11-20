@@ -42,6 +42,8 @@ reply in Bangla, keep steps tiny, and deliver a finished file rather than option
    NODE_PATH=$(npm root -g) node tools/make_captions.cjs $W tools/specs/<name>.json
    python3 tools/build_vlog.py tools/specs/<name>.json $W output/<name>.mp4
    ```
+   After building, confirm with ffprobe that the audio stream is as long as the video, and that the last
+   voice line ends at least ~1 s before the end (lengthen the last scene if not; never past the clip's real length).
    Fix any `WARNING: voice line ... too long` by shortening the line or moving it one scene earlier.
 7. **Check the result** before sending: extract one frame from the middle of every scene at >=280 px wide and
    look for faces, foreign text, cropped-off subjects, captions covering the subject, and colour jumps between scenes.

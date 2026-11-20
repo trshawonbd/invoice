@@ -103,7 +103,7 @@
   {
    "src": "clips/parnu/IMG_1049.MOV",
    "ss": 2.0,
-   "d": 5.0,
+   "d": 5.8,
    "tr": "fadeblack",
    "td": 0.8,
    "grade": "colorbalance=rs=0.04:rm=0.05:bm=-0.05:bh=-0.04,eq=saturation=1.15",
