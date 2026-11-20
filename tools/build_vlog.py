@@ -8,17 +8,21 @@ Sound: real ambient audio, levelled per clip, crossfaded, faded out at the end.
 """
 import json, os, subprocess, sys
 spec_path, capdir, out = sys.argv[1:4]
+def probe_color(path):
+    out = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+                                   "stream=color_primaries,color_range", "-of", "default=nw=1", path], text=True)
+    d = dict(l.split("=", 1) for l in out.split())
+    return d.get("color_primaries", ""), d.get("color_range", "")
+
 spec = json.load(open(spec_path)); segs = spec["segs"]; n = len(segs)
 BASE = spec.get("grade", "")
 cmd = ["ffmpeg", "-v", "error", "-y"]
-for s in segs:  # video inputs 0..n-1
+for idx, s in enumerate(segs):  # video inputs 0..n-1
     if s.get("photo"):
         cmd += ["-loop", "1", "-framerate", "30", "-t", str(s["d"]), "-i", s["src"]]
     else:
-        cmd += ["-ss", str(s["ss"]), "-t", str(s["d"]), "-i", s["src"]]
+        cmd += ["-i", f"{capdir}/seg{idx}.mov"]  # pre-rendered below, before the main ffmpeg run
 aidx = {}
-for i, s in enumerate(segs):  # extra audio inputs for photos
-    pass
 k = n
 for i, s in enumerate(segs):
     if s.get("photo"):
@@ -40,10 +44,18 @@ for i, s in enumerate(segs):
                   f"crop=1080:1920,format=yuv420p{g},setsar=1,fps=30,format=yuv420p,settb=AVTB[v{i}]")
     else:
         zh, cy, cx = s.get("zh", 1920), s.get("cy", 0), s.get("cx", "(iw-1080)/2")
-        # iPhone footage is Display-P3 full range -> standard bt709
-        fc.append(f"[{i}:v]scale=-2:{zh}:flags=lanczos,crop=1080:1920:{cx}:{cy},"
-                  f"colorspace=all=bt709:iall=bt601-6-625:iprimaries=smpte432:itrc=bt709:irange=pc:range=tv:format=yuv420p{g},"
-                  f"setsar=1,fps=30,format=yuv420p,settb=AVTB[v{i}]")
+        prim, rng = probe_color(s["src"])
+        if prim == "smpte432":   # iPhone Display-P3 full range -> standard bt709
+            conv = "colorspace=all=bt709:iall=bt601-6-625:iprimaries=smpte432:itrc=bt709:irange=pc:range=tv:format=yuv420p"
+        elif rng == "pc":        # already bt709, only full -> tv range
+            conv = "scale=in_range=pc:out_range=tv,format=yuv420p"
+        else:
+            conv = "format=yuv420p"
+        proxy = f"{capdir}/seg{i}.mov"
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["ss"]), "-t", str(s["d"]), "-i", s["src"],
+                        "-vf", f"scale=-2:{zh}:flags=lanczos,crop=1080:1920:{cx}:{cy},{conv}{g},setsar=1,fps=30,format=yuv420p",
+                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-c:a", "pcm_s16le", "-ar", "48000", proxy], check=True)
+        fc.append(f"[{i}:v]settb=AVTB,fps=30,format=yuv420p[v{i}]")
     a = aidx.get(i, i)
     fc.append(f"[{a}:a]aformat=sample_rates=48000:channel_layouts=stereo,highpass=f=90,dynaudnorm=f=300:g=21:m=6:p=0.5[a{i}]")
 pv, pa = "v0", "a0"

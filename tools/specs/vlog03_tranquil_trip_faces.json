@@ -1,0 +1,140 @@
+{
+ "grade": "eq=contrast=1.05:saturation=1.10",
+ "segs": [
+  {
+   "src": "clips/parnu/IMG_0675.mov",
+   "ss": 0.3,
+   "d": 3.4,
+   "title": "শহর থেকে দূরে",
+   "sub": "একটু শান্তির খোঁজে"
+  },
+  {
+   "src": "clips/parnu/IMG_1204.MOV",
+   "ss": 8.0,
+   "d": 3.6,
+   "tr": "smoothup",
+   "cap": "সাথে আমার দুই প্রিয় মানুষ"
+  },
+  {
+   "src": "clips/parnu/IMG_0680.MOV",
+   "ss": 2.0,
+   "d": 3.2,
+   "tr": "smoothleft",
+   "cap": "সামনে শুধু খোলা রাস্তা"
+  },
+  {
+   "src": "clips/parnu/IMG_0676.MOV",
+   "ss": 8.0,
+   "d": 2.8,
+   "tr": "dissolve"
+  },
+  {
+   "src": "clips/parnu/IMG_0695.MOV",
+   "ss": 3.6,
+   "d": 3.0,
+   "tr": "zoomin",
+   "td": 0.5,
+   "cap": "কয়েকদিনের ছোট্ট ঘর"
+  },
+  {
+   "src": "clips/parnu/IMG_0743.MOV",
+   "ss": 2.0,
+   "d": 3.0,
+   "tr": "slideup",
+   "td": 0.3,
+   "cap": "নতুন জায়গায় প্রথম নাস্তা"
+  },
+  {
+   "src": "clips/parnu/IMG_0695.MOV",
+   "ss": 104.5,
+   "d": 2.8,
+   "tr": "fade",
+   "cap": "ঠান্ডায় উষ্ণ সনা"
+  },
+  {
+   "src": "clips/parnu/IMG_0838.MOV",
+   "ss": 23.5,
+   "d": 3.5,
+   "tr": "smoothup",
+   "cap": "চারপাশে শুধু সবুজ"
+  },
+  {
+   "src": "clips/parnu/IMG_0838.MOV",
+   "ss": 28.0,
+   "d": 3.2,
+   "tr": "dissolve",
+   "cap": "সময় যেন থেমে আছে"
+  },
+  {
+   "src": "clips/parnu/IMG_0788.MOV",
+   "ss": 9.0,
+   "d": 4.0,
+   "tr": "fade",
+   "cap": "ছোট্ট পায়ে বড় অভিযান"
+  },
+  {
+   "src": "clips/parnu/IMG_9588.MOV",
+   "ss": 0.3,
+   "d": 3.0,
+   "tr": "zoomin",
+   "td": 0.4
+  },
+  {
+   "src": "clips/parnu/IMG_5675.MOV",
+   "ss": 3.0,
+   "d": 3.5,
+   "tr": "smoothleft",
+   "cap": "বাবার কোলে"
+  },
+  {
+   "src": "clips/parnu/IMG_1045.MOV",
+   "ss": 40.0,
+   "d": 3.5,
+   "tr": "smoothleft"
+  },
+  {
+   "src": "clips/parnu/IMG_0838.MOV",
+   "ss": 1.0,
+   "d": 3.0,
+   "tr": "fade",
+   "cap": "আমরা তিনজন, একসাথে"
+  },
+  {
+   "src": "clips/parnu/IMG_0838.MOV",
+   "ss": 12.0,
+   "d": 3.5,
+   "tr": "dissolve"
+  },
+  {
+   "src": "clips/parnu/IMG_1130.MOV",
+   "ss": 5.0,
+   "d": 4.5,
+   "tr": "circleopen",
+   "td": 0.5,
+   "cap": "তারপর সমুদ্রের কাছে"
+  },
+  {
+   "src": "clips/parnu/IMG_1130.MOV",
+   "ss": 26.0,
+   "d": 4.0,
+   "tr": "dissolve",
+   "cap": "ঢেউ ছুঁয়ে দেখার আনন্দ"
+  },
+  {
+   "src": "clips/parnu/IMG_1130.MOV",
+   "ss": 33.2,
+   "d": 3.6,
+   "tr": "dissolve",
+   "cap": "ঢেউয়ের শব্দে মন হালকা"
+  },
+  {
+   "src": "clips/parnu/IMG_1049.MOV",
+   "ss": 2.0,
+   "d": 5.0,
+   "tr": "fadeblack",
+   "td": 0.8,
+   "grade": "colorbalance=rs=0.04:rm=0.05:bm=-0.05:bh=-0.04,eq=saturation=1.15",
+   "cap": "এই শান্তিটুকুই তো চেয়েছিলাম"
+  }
+ ]
+}

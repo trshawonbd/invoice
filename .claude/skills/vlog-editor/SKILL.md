@@ -81,7 +81,9 @@ Match a shaded scene to sunny neighbours with a per-scene `grade`.
 
 ## What the builder already does
 
-- Converts iPhone Display-P3 footage to standard bt709 so colours are right on every phone.
+- Pre-renders every scene to a 1080x1920 proxy first, so many 4K clips do not run out of memory.
+- Detects each clip's colour format (Display-P3 or bt709, full or TV range) and converts it to standard bt709.
+
 - Levels each clip's ambient sound, crossfades between scenes, fades picture and sound out at the end.
 - Voiceover: speeds lines slightly to fit, ducks ambient sound under the voice, limits peaks.
 - Captions fade in and out with each scene.
