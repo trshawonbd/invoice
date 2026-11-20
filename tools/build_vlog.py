@@ -23,6 +23,7 @@ Scene keys
   sfx        extra sound on the transition into this scene: whoosh, whoosh_soft, riser, impact, pop, click, chime
   hit        sound exactly at this scene's start (e.g. "impact" on the title reveal); hit_at = offset in scene
   grade      extra colour filter for this scene      amb  extra dB for this scene's real sound (e.g. +6 for waves)
+  amb_src, amb_ss   take this scene's real sound from another clip of the same place (e.g. when people talk)
   cap/title/sub/tag    on-screen text (rendered by make_captions.cjs); text slides up and fades in
   vo         voiceover line (vo<i>.mp3 in work_dir, made by tts_elevenlabs.py / tts.py)
   photo, asrc, ass     still image with slow zoom; real sound borrowed from another clip
@@ -169,7 +170,7 @@ def speech_spans(src):
 def speech_free_start(src, ss, dur):
     """ss if [ss, ss+dur] has no talking, else the nearest talk-free window in the same clip, else None"""
     length, spans = speech_spans(src)
-    free = lambda a: a >= 0 and a + dur <= length and all(e <= a or st >= a + dur for st, e in spans)
+    free = lambda a: a >= 0 and a + dur <= length and all(e <= a - 0.4 or st >= a + dur + 0.4 for st, e in spans)  # 0.4 s guard for crossfades
     if free(ss): return ss
     for off in np.arange(0.25, length, 0.25):
         for a in (ss - off, ss + off):
@@ -180,11 +181,20 @@ amb_db = spec.get("ambient_db", -30 if MUSIC else -24)
 amb = np.zeros((N, 2), np.float32)
 for i, s in enumerate(segs):
     src, ss = (s["asrc"], s["ass"]) if s.get("photo") else (s["src"], s["ss"])
+    if s.get("amb_src"): src, ss = s["amb_src"], s.get("amb_ss", 0.0)   # real sound from another clip of the same place
     if s.get("mute"): continue   # slow-mo / time-lapse scenes keep their real sound at normal speed (waves, wind)
     if spec.get("remove_talk", True):   # people talking in the background: borrow talk-free ambience from the same clip
         new_ss = speech_free_start(src, ss, s["d"])
+        if new_ss is None:   # borrow talk-free outdoor sound from the nearest other scene's clip
+            for j in sorted(range(n), key=lambda j: abs(j - i)):
+                o = segs[j]
+                if j == i or o.get("photo") or o["src"] == src: continue
+                cand = speech_free_start(o["src"], o["ss"], s["d"])
+                if cand is not None:
+                    print(f"scene {i}: talking everywhere in {os.path.basename(src)}, ambience borrowed from {os.path.basename(o['src'])} at {cand:.1f}s")
+                    src, new_ss = o["src"], cand; break
         if new_ss is None:
-            print(f"scene {i}: talking everywhere in {os.path.basename(src)}, real sound muted"); continue
+            print(f"scene {i}: no talk-free ambience found, real sound muted"); continue
         if abs(new_ss - ss) > 1e-3: print(f"scene {i}: talking removed, ambience taken from {new_ss:.1f}s instead of {ss:.1f}s")
         ss = new_ss
     x = load_audio(src, ss, s["d"])
@@ -199,6 +209,7 @@ for i, s in enumerate(segs):
     p = int(starts[i] * SR); m = min(len(x), N - p)
     amb[p:p + m] += x[:m]
 
+sf.write(f"{work}/amb_only.wav", amb, SR)   # for the talk check after building
 voice = np.zeros((N, 2), np.float32)
 vos = [i for i, s in enumerate(segs) if s.get("vo") and os.path.exists(f"{work}/vo{i}.mp3")]
 for j, i in enumerate(vos):
