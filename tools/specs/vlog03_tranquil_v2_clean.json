@@ -1,0 +1,158 @@
+{
+ "grade": "eq=contrast=1.04:saturation=1.08",
+ "look": "cinematic",
+ "bpm": 90,
+ "sfx": false,
+ "vo_tempo": 1.0,
+ "segs": [
+  {
+   "src": "clips/parnu/IMG_1130.MOV",
+   "ss": 6.0,
+   "beats": 4,
+   "speed": 0.5,
+   "zoom": "in",
+   "title": "শহর থেকে দূরে",
+   "sub": "একটু শান্তির খোঁজে"
+  },
+  {
+   "src": "clips/parnu/IMG_0675.mov",
+   "ss": 0.4,
+   "beats": 5,
+   "tr": "smoothup",
+   "td": 0.3,
+   "cap": "ব্যস্ত শহরটা পেছনে ফেলে",
+   "vo": "ব্যস্ত শহরটা পেছনে ফেলে বেরিয়ে পড়লাম।"
+  },
+  {
+   "src": "clips/parnu/IMG_0680.MOV",
+   "ss": 2.0,
+   "beats": 3,
+   "speed": 2.0,
+   "tr": "smoothleft",
+   "td": 0.3,
+   "cap": "সামনে খোলা রাস্তা",
+   "vo": "সামনে শুধু খোলা রাস্তা আর বিশাল আকাশ।"
+  },
+  {
+   "src": "clips/parnu/IMG_0676.MOV",
+   "ss": 20.0,
+   "beats": 4,
+   "zoom": "out",
+   "tr": "dissolve",
+   "td": 0.3,
+   "cap": "আর বিশাল আকাশ"
+  },
+  {
+   "src": "clips/parnu/IMG_0695.MOV",
+   "ss": 3.6,
+   "beats": 4,
+   "zoom": "in",
+   "tr": "zoomin",
+   "td": 0.35,
+   "cap": "কয়েকদিনের ছোট্ট ঘর",
+   "vo": "কয়েকদিনের জন্য এটাই আমাদের ছোট্ট ঘর।"
+  },
+  {
+   "src": "clips/parnu/IMG_0695.MOV",
+   "ss": 104.5,
+   "beats": 2,
+   "zoom": "in",
+   "tr": "slideup",
+   "td": 0.25,
+   "cap": "ঠান্ডায় উষ্ণ সনা"
+  },
+  {
+   "src": "clips/parnu/IMG_0838.MOV",
+   "ss": 23.5,
+   "beats": 6,
+   "zoom": "out",
+   "tr": "fade",
+   "td": 0.4,
+   "cap": "এখানে সময় ধীরে চলে",
+   "vo": "এখানে সময় যেন একটু ধীরে চলে।"
+  },
+  {
+   "src": "clips/parnu/IMG_0838.MOV",
+   "ss": 28.0,
+   "beats": 3,
+   "tr": "dissolve",
+   "td": 0.35,
+   "cap": "চারপাশে নিস্তব্ধতা",
+   "vo": "চারপাশে শুধু নিস্তব্ধতা।"
+  },
+  {
+   "src": "clips/parnu/IMG_0687.MOV",
+   "ss": 2.0,
+   "beats": 2,
+   "zoom": "in",
+   "tr": "smoothleft",
+   "td": 0.3
+  },
+  {
+   "src": "clips/parnu/IMG_0779.MOV",
+   "ss": 4.0,
+   "beats": 3,
+   "tr": "fade",
+   "td": 0.35,
+   "cap": "ছোট্ট পায়ে বড় অভিযান",
+   "vo": "ছোট্ট পায়ে ওর প্রথম বড় অভিযান।"
+  },
+  {
+   "src": "clips/parnu/IMG_1045.MOV",
+   "ss": 42.0,
+   "beats": 3,
+   "speed": 0.5,
+   "tr": "smoothup",
+   "td": 0.3
+  },
+  {
+   "src": "clips/parnu/IMG_0838.MOV",
+   "ss": 1.0,
+   "beats": 5,
+   "tr": "fade",
+   "td": 0.4,
+   "cap": "আমরা তিনজন, একসাথে",
+   "vo": "আমরা তিনজন, একসাথে।"
+  },
+  {
+   "src": "clips/parnu/IMG_1130.MOV",
+   "ss": 8.0,
+   "beats": 4,
+   "tr": "circleopen",
+   "td": 0.4,
+   "cap": "তারপর সমুদ্রের কাছে",
+   "vo": "তারপর সমুদ্রের কাছে।"
+  },
+  {
+   "src": "clips/parnu/IMG_1129.MOV",
+   "ss": 1.0,
+   "beats": 5,
+   "speed": 0.5,
+   "zoom": "in",
+   "tr": "fade",
+   "td": 0.4,
+   "cap": "ঢেউয়ের শব্দে মন হালকা",
+   "vo": "ঢেউয়ের শব্দে মনটা হালকা হয়ে গেল।"
+  },
+  {
+   "src": "clips/parnu/IMG_1130.MOV",
+   "ss": 33.2,
+   "beats": 3,
+   "tr": "dissolve",
+   "td": 0.4,
+   "amb": 6
+  },
+  {
+   "src": "clips/parnu/IMG_1049.MOV",
+   "ss": 2.0,
+   "beats": 8,
+   "zoom": "in",
+   "zoom_amt": 0.06,
+   "tr": "fadeblack",
+   "td": 0.6,
+   "grade": "colorbalance=rs=0.04:rm=0.05:bm=-0.05:bh=-0.04,eq=saturation=1.12",
+   "cap": "এই শান্তিটুকুই তো চেয়েছিলাম",
+   "vo": "দিন শেষে বুঝলাম, এই শান্তিটুকুই তো চেয়েছিলাম।"
+  }
+ ]
+}

@@ -16,7 +16,7 @@ Top-level spec keys
 
 Scene keys
   src, ss, d | beats   clip, start second, duration on the timeline (seconds or beats)
-  speed      0.5 = slow motion (60 fps sources stay smooth), 2 = time-lapse feel. Ambient is muted when speed != 1
+  speed      0.5 = slow motion (60 fps sources stay smooth), 2 = time-lapse feel. Real sound stays at normal speed; mute=true drops it
   zoom       "in" / "out": slow push-in / pull-out (zoom_amt, default 0.08)
   tr, td     transition into this scene and its length (default fade, 0.4 s)
   sfx        extra sound on the transition into this scene: whoosh, whoosh_soft, riser, impact, pop, click, chime
@@ -153,7 +153,7 @@ amb_db = spec.get("ambient_db", -30 if MUSIC else -24)
 amb = np.zeros((N, 2), np.float32)
 for i, s in enumerate(segs):
     src, ss = (s["asrc"], s["ass"]) if s.get("photo") else (s["src"], s["ss"])
-    if s.get("speed", 1.0) != 1.0 or s.get("mute"): continue
+    if s.get("mute"): continue   # slow-mo / time-lapse scenes keep their real sound at normal speed (waves, wind)
     x = load_audio(src, ss, s["d"])
     x = at_db(x, amb_db + s.get("amb", 0))
     td_in = segs[i].get("td", 0.4) if i else 0.05
