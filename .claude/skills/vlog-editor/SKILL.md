@@ -1,134 +1,140 @@
 ---
 name: vlog-editor
-description: Edit Shawon's raw phone clips into a finished faceless personal vlog (9:16 Short/Reel) with a story, Bangla captions, colour correction, varied transitions and a Bangla AI voiceover. Use when he sends clips or a Drive folder and asks for a vlog, reel, short, voiceover, or "edit this video".
+description: Turn Shawon's raw phone footage (a Drive link or chat uploads of videos, photos and voice notes) into a finished, engaging 9:16 personal vlog for YouTube Shorts / Facebook / Instagram Reels - story, Bangla voiceover in his cloned voice, original background music, sound effects, colour grade, beat-synced cuts and animated Bangla captions. Use when he sends footage or a link and asks for a vlog, reel, short, voiceover, music, or "edit this video".
 ---
 
 # Vlog editor
 
-Turn raw clips into a finished vertical vlog. Shawon has no coding knowledge and about 30 minutes a day:
-reply in Bangla, keep steps tiny, and deliver a finished file rather than options.
+Shawon has no coding knowledge and about 30 minutes a day. Reply in **Bangla**, keep his steps tiny,
+and hand him finished files, not options. Never present work as checked when it was not.
 
-## House rules (always)
+## The flow (always in this order)
 
-- **Format:** 1080x1920 (9:16), H.264 MP4, 30 fps.
-- **Length:** personal vlog 25-40 s. Hillcup Coffee page version max 20 s. Never under 10 s.
-- **No faces:** not his, not his son's, not strangers'. Cut the moment, or zoom/crop (`zh`, `cy`, `cx`) so the face leaves the frame. Check every scene at large size, not thumbnails. Tell him what you cut.
-- **Location:** frame it as "Europe / Nordic", never Tallinn or Estonia. Crop out Estonian signs and text.
-- **Text:** Bangla only, short lines. No emoji in on-screen text (no emoji font).
-- **Sound:** real ambient sound, no music. Voiceover is added on top when he asks for it.
-- **Other brands:** fine in the personal vlog. In a Hillcup version, flag any visible competitor logo and ask.
-- One video at a time. Show it, wait for his OK. Ask before big creative changes.
+1. **Collect** - he gives a Drive folder link (or chat uploads). Download everything: videos, photos, voice notes.
+2. **Analyse all footage** - contact sheet for every clip (one frame per 1-2 s, timestamped) and read every sheet.
+   For each clip note: what happens, best seconds, faces (his, family, strangers), readable signs/place names,
+   motion (good for slow-mo?), and sound (`volumedetect`; waves, birds, laughter worth keeping?).
+3. **Write the story** - your own creative call. Explain it to him **in simple spoken Bangla**, the way a friend
+   would ("প্রথমে সমুদ্রের ধারে তোমাদের হাঁটা দিয়ে শুরু, তারপর..."), as a short scene table:
+   scene, what is shown, on-screen text, voice line. Offer two versions when faces are involved
+   (with faces / without). Then **stop and wait for his approval of the story and the voice lines.**
+4. **Voice** - only after he approves: ElevenLabs in his cloned voice (below). Never call ElevenLabs before approval.
+5. **Music** - original instrumental from ACE-Step (local, free, Apache-2.0). Match the mood; tempo sets the cut grid.
+6. **Edit** - write the spec, build, check, fix, deliver.
 
-## Workflow
+## House rules
 
-1. **Setup (once per session)**
-   ```bash
-   apt-get install -y -q fonts-noto-core
-   pip install -q gTTS gdown pillow-heif
-   ```
-2. **Get clips.** Chat uploads land in `/root/.claude/uploads/...`. For a Drive folder, list with
-   `gdown.download_folder(url, skip_download=True)` and download each file with
-   `curl -L "https://drive.usercontent.google.com/download?id=<ID>&export=download&confirm=t"`.
-   Copy into a new `clips/<set>/` folder (git-ignored).
-3. **Look at everything.** For each clip make a timestamped contact sheet (one frame every 1-2 s) and read it.
-   Note per clip: what happens, usable seconds, faces, readable signs, and mean volume (`volumedetect`).
-4. **Write the story.** Beginning (where/when, big title) -> middle (3-8 moments) -> ending (a closing shot and line).
-   Pick 2.5-4 s from each clip. A video must feel complete: it needs an opening and a real ending.
-5. **Write the spec** in `tools/specs/<name>.json` (see below), one entry per scene.
-6. **Build.**
-   ```bash
-   W=<scratchpad>/<name>; mkdir -p $W
-   python3 tools/tts.py tools/specs/<name>.json $W          # only if the spec has "vo" lines
-   NODE_PATH=$(npm root -g) node tools/make_captions.cjs $W tools/specs/<name>.json
-   python3 tools/build_vlog.py tools/specs/<name>.json $W output/<name>.mp4
-   ```
-   After building, confirm with ffprobe that the audio stream is as long as the video, and that the last
-   voice line ends at least ~1 s before the end (lengthen the last scene if not; never past the clip's real length).
-   Fix any `WARNING: voice line ... too long` by shortening the line or moving it one scene earlier.
-7. **Check the result** before sending: extract one frame from the middle of every scene at >=280 px wide and
-   look for faces, foreign text, cropped-off subjects, captions covering the subject, and colour jumps between scenes.
-8. **Deliver** with SendUserFile, plus: a Bangla title (max one emoji), a 2-3 line Bangla description,
-   3-5 hashtags, and the reminder to set YouTube video language to **Bengali**.
-   Say plainly what you could not verify: you cannot hear audio, only measure levels.
+- 1080x1920, H.264 MP4, 30 fps. Personal vlog 30-45 s; Hillcup Coffee page version max 20 s; never under 10 s.
+- **Faces:** default faceless (cut, or crop with `zh`/`cy`/`cx`). If he asks, also make a with-faces version.
+- **Place:** say "ইউরোপ"/"নর্ডিক", never the town or country; crop out local signs and text.
+- **Text:** Bangla only, short lines, no emoji on screen (no emoji font).
+- **Music:** only music generated by ACE-Step or other royalty-free sources. Never download songs from YouTube etc.
+  Bangla film songs: tell him to add them inside the Instagram/Facebook/YouTube app (licensed there).
+- Other brands: fine in the personal vlog; flag competitor logos in Hillcup versions.
+- One video at a time; ask before big creative changes.
 
-## Spec format
+## What makes it engaging (apply every time)
+
+- **Hook in the first 1.5-2 s:** open on the most beautiful or emotional shot (not the car dashboard), slow-mo + push-in,
+  big title, `hit: "impact"`. The story can flash back after it.
+- **Cut on the beat:** set `bpm` = music tempo and give scenes `beats` (2-6). Faster in the middle, slower at the end.
+- **Movement in every shot:** `zoom: "in"/"out"` on static shots; `speed: 0.5` on 60 fps motion (walking, running, waves);
+  `speed: 2` on long drives.
+- **Varied transitions with sound:** smoothleft/smoothup/slideup for energy (auto whoosh), dissolve/fade for calm,
+  circleopen for a reveal, `sfx: "riser"` before a big reveal (e.g. arriving at the sea), `sfx: "chime"` on a sweet moment.
+- **Captions** that slide up with a soft pop - they also carry the story for people watching muted.
+- **Sound layers:** voice on top, music ducked ~10 dB under the voice, real sound kept low but alive (raise waves with `amb: 6`).
+- **Look:** `"look": "cinematic"` (gentle S-curve, warm highlights, cool shadows, vignette) + per-scene grade to match shots.
+- **Ending:** a closing shot held longer, the last voice line finishing at least 1 s before the end, fade to black.
+
+## Setup (once per session)
+
+```bash
+apt-get install -y -q fonts-noto-core
+pip install -q gdown pillow-heif librosa soundfile gTTS
+python3 tools/make_sfx.py tools/sfx        # only if tools/sfx/*.wav are missing
+```
+
+Environment "Vlog video editing" allows Drive, Google TTS, Hugging Face and the ElevenLabs key.
+
+### Footage from Drive
+```python
+import gdown; files = gdown.download_folder(URL, skip_download=True)   # ids + names
+```
+then per file `curl -L "https://drive.usercontent.google.com/download?id=<ID>&export=download&confirm=t" -o clips/<set>/<name>`
+(`clips/` is git-ignored). Photos may be HEIC: open with pillow-heif.
+
+### Music: ACE-Step 1.5 on CPU (about 3 minutes per 50 s track)
+Python 3.12 venv; torch from PyPI (download.pytorch.org is blocked). Skip the LM and its 3.7 GB weights:
+```bash
+M=<scratchpad>/acestep
+uv venv -p 3.12 $M/venv
+git clone --depth 1 https://github.com/ace-step/ACE-Step-1.5.git $M/src
+# deps = pyproject dependencies minus torch*, nano-vllm, mlx*, lightning, tensorboard, lycoris, modelscope, gradio
+VIRTUAL_ENV=$M/venv uv pip install --no-config "torch==2.10.*" "torchaudio==2.10.*" "torchvision==0.25.*" -r deps.txt
+VIRTUAL_ENV=$M/venv uv pip install --no-config --no-deps -e $M/src
+HF_HUB_DISABLE_XET=1 $M/venv/bin/python -c "from huggingface_hub import snapshot_download; snapshot_download('ACE-Step/Ace-Step1.5', local_dir='$M/ckpt/checkpoints', ignore_patterns=['acestep-5Hz-lm-1.7B/*'])"
+uv cache clean      # frees ~7 GB; disk is tight
+$M/venv/bin/python tools/make_music.py out.wav <seconds> <bpm> "<caption>" $M/ckpt/checkpoints
+```
+Make the track ~10 s longer than the video (beat-align trims the start; the tail is the outro).
+Check it before use with librosa: tempo near the asked bpm, no clipping, no silent gaps, low spectral flatness.
+The free Hugging Face Space (ZeroGPU) refuses anonymous use; he declined a token, so stay local.
+YuE needs a GPU; MiniMax Music is a paid API - not used.
+
+### Voice: his ElevenLabs clone (after story approval only)
+Key saved on the environment, injected by the proxy for `api.elevenlabs.io` (never ask for or print it).
+Voice "Shawon (vlog)", id `n9Y04pWSwHXQNHhBhv2s`, model `eleven_v4` (Bangla), Starter plan = `mp3_44100_128`, 40k chars/month.
+```bash
+python3 tools/tts_elevenlabs.py tools/specs/<name>.json $W     # writes vo<i>.mp3 for scenes with "vo"
+```
+Re-use existing vo files when only timing changes; regenerate only lines whose text changed.
+Fallbacks: `tools/tts.py` (Google, female), `tools/clone_voice.py` (OpenVoice, weak; not in Auto mode).
+
+## Build
+
+```bash
+W=<scratchpad>/<name>; mkdir -p $W
+NODE_PATH=$(npm root -g) node tools/make_captions.cjs $W tools/specs/<name>.json
+python3 tools/build_vlog.py tools/specs/<name>.json $W output/<name>.mp4
+REUSE_VIDEO=1 python3 tools/build_vlog.py ...   # audio-only rebuild (mix/voice/music changes), ~10 s instead of ~7 min
+```
+The builder pre-renders each scene to a 1080x1920 proxy (4K clips would run out of memory), converts colour
+(Display-P3 or bt709) to bt709, then mixes all audio in numpy (ambient, voice, ducked music, SFX) and masters to
+about -16 dBFS RMS with a soft limiter. Full key reference is in the docstring of `tools/build_vlog.py`.
+
+Voice timing: a line starts 0.45 s into its scene and may run until the next voiced scene starts.
+Size scene `beats` so each slot is longer than its line: measure every vo mp3 with ffprobe first, then pick beats.
+Fix every `WARNING: voice line ... too long` before delivering.
+
+## Check before sending (every time)
+
+- One frame from the middle of every scene at ≥240 px: faces, signs, cropped subjects, caption over a face, colour jumps.
+- `ffprobe`: audio and video the same length.
+- Decode the audio (stereo, not a mono downmix): peak < 1.0, RMS ≈ -16 dB, no silent seconds where sound is expected.
+- The last voice line ends before the fade.
+- Say plainly what you cannot verify: you cannot hear, only measure.
+
+## Deliver
+
+SendUserFile the MP4, then in Bangla: what changed, a title (max one emoji), 2-3 line description, 3-5 hashtags,
+the reminder to set the YouTube video language to **Bengali**, and anything you could not check.
+
+## Spec example
 
 ```json
 {
- "grade": "eq=contrast=1.07:saturation=1.16:gamma=1.02,colorbalance=rm=0.03:bm=-0.03",
+ "grade": "eq=contrast=1.04:saturation=1.08", "look": "cinematic",
+ "bpm": 90, "music": "output/music/tranquil_acoustic_90bpm.mp3", "beat_align": true, "music_db": -21,
+ "sfx": true, "vo_tempo": 1.0,
  "segs": [
-  {"src": "clips/set3/IMG_1633.mov", "ss": 0.3, "d": 3.4,
-   "title": "ইউরোপে শরতের সকাল", "sub": "একটু হাঁটা, এক কাপ কফি", "vo": "ইউরোপে শরতের এক সকাল।"},
-  {"src": "clips/set3/IMG_1638.mov", "ss": 0.6, "d": 2.8, "tr": "smoothup",
-   "cap": "হাঁটতে বের হলাম", "vo": "একটু হাঁটতে বের হলাম।"},
-  {"src": "clips/set3/IMG_1634.jpg", "photo": true, "d": 2.4,
-   "asrc": "clips/set3/IMG_1633.mov", "ass": 5.0, "tr": "zoomin", "td": 0.5}
+  {"src": "clips/parnu/IMG_1130.MOV", "ss": 6.0, "beats": 4, "speed": 0.5, "zoom": "in",
+   "title": "শহর থেকে দূরে", "sub": "একটু শান্তির খোঁজে", "hit": "impact"},
+  {"src": "clips/parnu/IMG_0675.mov", "ss": 0.4, "beats": 5, "tr": "smoothup", "td": 0.3,
+   "cap": "ব্যস্ত শহরটা পেছনে ফেলে", "vo": "ব্যস্ত শহরটা পেছনে ফেলে বেরিয়ে পড়লাম।"},
+  {"src": "clips/parnu/IMG_1130.MOV", "ss": 8.0, "beats": 4, "tr": "circleopen", "sfx": "riser",
+   "cap": "তারপর সমুদ্রের কাছে"}
  ]
 }
 ```
-
-| Key | Meaning |
-|---|---|
-| `src`, `ss`, `d` | clip, start second, duration |
-| `tr`, `td` | transition into this scene and its length (default `fade`, 0.4 s). Mix several: `fade`, `dissolve`, `smoothleft`, `smoothup`, `slideup`, `zoomin`, `circleopen`, `hblur` |
-| `title`, `sub` | big opening title and subtitle (first scene) |
-| `cap`, `tag` | bottom caption, optional small brand line under it |
-| `vo` | voiceover line, spoken from the start of this scene. Keep it under the scene length (about 4 Bangla words per second) |
-| `grade` | extra colour filter for this scene, e.g. `eq=gamma=1.12` for dark shots |
-| `zh`, `cy`, `cx` | zoom height (default 1920) and crop offsets, to push faces or signs out of frame |
-| `photo`, `asrc`, `ass` | still image with slow zoom; ambient sound borrowed from another clip |
-
-Top-level `grade` applies to every scene: add warmth and contrast on overcast days, leave empty on sunny days.
-Match a shaded scene to sunny neighbours with a per-scene `grade`.
-
-## What the builder already does
-
-- Pre-renders every scene to a 1080x1920 proxy first, so many 4K clips do not run out of memory.
-- Detects each clip's colour format (Display-P3 or bt709, full or TV range) and converts it to standard bt709.
-
-- Levels each clip's ambient sound, crossfades between scenes, fades picture and sound out at the end.
-- Voiceover: speeds lines slightly to fit, ducks ambient sound under the voice, limits peaks.
-- Captions fade in and out with each scene.
-
-## Voice
-
-`tools/tts.py` makes the lines with Google's free Bangla voice (female; needs host `translate.google.com`).
-Only the voiceover text is sent out. Microsoft's voices (edge-tts) do not work here: the proxy blocks WebSockets.
-
-### Shawon's own voice: ElevenLabs (default, best quality)
-
-He has an ElevenLabs Starter plan; the API key is saved on the "Vlog video editing" environment and the
-proxy injects it for `api.elevenlabs.io` (never ask for or print the key). His cloned voice is
-"Shawon (vlog)", id `n9Y04pWSwHXQNHhBhv2s`, made from his own recording with his consent.
-
-```bash
-python3 tools/tts_elevenlabs.py tools/specs/<name>.json $W     # writes vo<i>.mp3 in his voice
-```
-Then make captions and build as usual; set `"vo_tempo": 1.0` in the spec so his real delivery is not sped up.
-Model `eleven_v4` (Bangla). Starter allows `mp3_44100_128` only, and 40,000 characters a month
-(a 35 s vlog uses about 90). Check usage with `GET /v1/user/subscription`.
-
-### Fallback: free local re-voicing (much weaker)
-
-`tools/clone_voice.py` re-voices those lines in his voice colour with OpenVoice V2, locally on CPU.
-Use only his own voice, from a recording he gave. Keep the built-in AI watermark on.
-
-```bash
-pip install -q torch torchaudio librosa soundfile inflect unidecode eng_to_ipa pypinyin cn2an jieba wavmark==0.0.3 whisper-timestamped pydub
-pip download --no-deps -d $W/pip "git+https://github.com/myshell-ai/OpenVoice.git" && unzip -q $W/pip/*.zip -d $W/src
-# converter/config.json + converter/checkpoint.pth from huggingface.co/myshell-ai/OpenVoiceV2 into $W/ckpt
-# (hosts huggingface.co and us.aws.cdn.hf.co)
-ffmpeg -i <his recording> -af "highpass=f=70,afftdn=nr=10,loudnorm=I=-20" -ar 22050 -ac 1 $W/ref.wav
-# convert each vo<i>.mp3 from tts.py to 22050 Hz mono vo<i>.wav in $W/in, then:
-HF_HUB_DISABLE_XET=1 python3 tools/clone_voice.py $W/src/MyShell-OpenVoice $W/ckpt $W/ref.wav $W/in $W/out
-# convert $W/out/vo<i>.wav back to vo<i>.mp3 in the captions folder, then run build_vlog.py as usual
-```
-
-Check it worked: the median pitch (librosa.pyin) of the output should be near his recording (~105 Hz),
-not the Google voice (~270 Hz). Rhythm and pronunciation stay Google's, so tell him it is "close", not identical.
-The session must not be in Auto mode for the clone step; ask him to switch to Accept edits and approve it.
-
-## Voiceover writing
-
-First person, warm, simple spoken Bangla, one short sentence per scene. Describe the feeling, not the picture.
-Leave one or two scenes without voice so the real sound comes through. End on a line that closes the story.
+SFX kit (`tools/sfx`, synthesised, copyright-free): whoosh, whoosh_soft, riser, impact, pop, click, chime.

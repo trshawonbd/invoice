@@ -1,101 +1,238 @@
 #!/usr/bin/env python3
-"""Build a 9:16 vlog from a JSON spec: usage build_vlog.py <spec.json> <captions_dir> <out.mp4>
+"""Build a 9:16 vlog from a JSON spec: usage build_vlog.py <spec.json> <work_dir> <out.mp4>
 
-Each segment: src, ss, d, tr (transition INTO it), td (transition secs), grade, cap/title text,
-optional photo=true (still image with slow zoom; sound taken from asrc/ass),
-optional vo (voiceover line, spoken from the start of that segment; clips made by tts.py as vo<i>.mp3).
-Sound: real ambient audio, levelled per clip, crossfaded, faded out at the end.
+work_dir holds the caption PNGs (cap<i>.png from make_captions.cjs) and voice lines (vo<i>.mp3);
+per-scene proxies and the audio mix are written there too.
+
+Top-level spec keys
+  grade      colour filter for every scene (ffmpeg filter string)
+  look       "cinematic" = gentle S-curve, warm highlights / cool shadows, soft vignette ("" for none)
+  music      path to a music track (looped/trimmed to length, ducked under the voice)
+  music_db   music level in dBFS RMS (default -22)      ambient_db  real-sound level (default -24, -30 with music)
+  bpm        tempo; a scene may then give "beats" instead of "d" so cuts land on the beat
+  beat_align true = trim the music so its first beat lands at 0 s (needs librosa)
+  sfx        true = automatic whoosh on moving transitions and a soft pop when captions appear
+  vo_tempo   minimum voice speed-up (default 1.0)
+
+Scene keys
+  src, ss, d | beats   clip, start second, duration on the timeline (seconds or beats)
+  speed      0.5 = slow motion (60 fps sources stay smooth), 2 = time-lapse feel. Ambient is muted when speed != 1
+  zoom       "in" / "out": slow push-in / pull-out (zoom_amt, default 0.08)
+  tr, td     transition into this scene and its length (default fade, 0.4 s)
+  sfx        extra sound on the transition into this scene: whoosh, whoosh_soft, riser, impact, pop, click, chime
+  hit        sound exactly at this scene's start (e.g. "impact" on the title reveal); hit_at = offset in scene
+  grade      extra colour filter for this scene      amb  extra dB for this scene's real sound (e.g. +6 for waves)
+  cap/title/sub/tag    on-screen text (rendered by make_captions.cjs); text slides up and fades in
+  vo         voiceover line (vo<i>.mp3 in work_dir, made by tts_elevenlabs.py / tts.py)
+  photo, asrc, ass     still image with slow zoom; real sound borrowed from another clip
+  zh, cy, cx crop control to keep faces or signs out of frame
 """
 import json, os, subprocess, sys
-spec_path, capdir, out = sys.argv[1:4]
+import numpy as np
+import soundfile as sf
+
+SR = 48000
+HERE = os.path.dirname(os.path.abspath(__file__))
+SFX_DIR = os.path.join(HERE, "sfx")
+spec_path, work, out = sys.argv[1:4]
+spec = json.load(open(spec_path)); segs = spec["segs"]; n = len(segs)
+MUSIC = spec.get("music")
+bpm = spec.get("bpm")
+for i, s in enumerate(segs):
+    if "beats" in s:   # on-timeline length = beats; add the next transition so every cut lands on the beat grid
+        if not bpm: sys.exit("scene uses 'beats' but spec has no bpm")
+        nxt_td = segs[i + 1].get("td", 0.4) if i < n - 1 else 0
+        s["d"] = round(s["beats"] * 60.0 / bpm + nxt_td, 3)
+
+LOOKS = {
+    "cinematic": "curves=master='0/0 0.12/0.09 0.5/0.5 0.88/0.92 1/1',"
+                 "colorbalance=rs=-0.03:bs=0.03:rh=0.04:bh=-0.04,vignette=angle=PI/5:mode=forward",
+    "": "",
+}
+look = LOOKS[spec.get("look", "")]
+
+
+def run(cmd): subprocess.run(cmd, check=True)
+
+
 def probe_color(path):
-    out = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
-                                   "stream=color_primaries,color_range", "-of", "default=nw=1", path], text=True)
-    d = dict(l.split("=", 1) for l in out.split())
+    o = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries",
+                                 "stream=color_primaries,color_range", "-of", "default=nw=1", path], text=True)
+    d = dict(l.split("=", 1) for l in o.split())
     return d.get("color_primaries", ""), d.get("color_range", "")
 
-spec = json.load(open(spec_path)); segs = spec["segs"]; n = len(segs)
-BASE = spec.get("grade", "")
-cmd = ["ffmpeg", "-v", "error", "-y"]
-for idx, s in enumerate(segs):  # video inputs 0..n-1
-    if s.get("photo"):
-        cmd += ["-loop", "1", "-framerate", "30", "-t", str(s["d"]), "-i", s["src"]]
-    else:
-        cmd += ["-i", f"{capdir}/seg{idx}.mov"]  # pre-rendered below, before the main ffmpeg run
-aidx = {}
-k = n
-for i, s in enumerate(segs):
-    if s.get("photo"):
-        cmd += ["-ss", str(s["ass"]), "-t", str(s["d"]), "-i", s["asrc"]]; aidx[i] = k; k += 1
+
+def load_audio(path, ss=0.0, dur=None, tempo=1.0):
+    """decode any file to 48 kHz stereo float32 numpy"""
+    cmd = ["ffmpeg", "-v", "error", "-ss", str(ss)] + (["-t", str(dur * tempo)] if dur else []) + ["-i", path]
+    af = [f"atempo={tempo}"] if abs(tempo - 1) > 1e-3 else []
+    cmd += (["-af", ",".join(af)] if af else []) + ["-ac", "2", "-ar", str(SR), "-f", "f32le", "-"]
+    raw = subprocess.run(cmd, capture_output=True, check=True).stdout
+    return np.frombuffer(raw, np.float32).reshape(-1, 2).copy()
+
+
+def rms_db(x):
+    return 20 * np.log10(np.sqrt(np.mean(x ** 2)) + 1e-9)
+
+
+def at_db(x, db):
+    return x * 10 ** ((db - rms_db(x)) / 20) if len(x) and rms_db(x) > -70 else x * 0
+
+
+def fit(x, n_out):
+    return x[:n_out] if len(x) >= n_out else np.vstack([x, np.zeros((n_out - len(x), 2), np.float32)])
+
+
+# ---------------- timeline ----------------
 starts, t = [], 0.0
 for i, s in enumerate(segs):
     td = segs[i + 1].get("td", 0.4) if i < n - 1 else 0
     starts.append(t); t += s["d"] - td
-total = t
-capbase = k
-for i in range(n):
-    cmd += ["-loop", "1", "-t", f"{total}", "-i", f"{capdir}/cap{i}.png"]
-fc = []
-for i, s in enumerate(segs):
-    g = ",".join(x for x in (BASE, s.get("grade", "")) if x); g = ("," + g) if g else ""
+total = round(t, 3)
+N = int(total * SR)
+
+# ---------------- video: one 1080x1920 proxy per scene ----------------
+REUSE = os.environ.get("REUSE_VIDEO") == "1" and os.path.exists(f"{work}/video_only.mp4")  # audio-only rebuild
+for i, s in enumerate([] if REUSE else segs):
+    g = ",".join(x for x in (spec.get("grade", ""), s.get("grade", ""), look) if x)
+    g = ("," + g) if g else ""
+    proxy = f"{work}/seg{i}.mov"
+    fr = max(int(s["d"] * 30), 1)
+    z = s.get("zoom_amt", 0.08)
+    zexpr = {"in": f"1+{z}*on/{fr}", "out": f"1+{z}-{z}*on/{fr}"}.get(s.get("zoom"), "1")
+    zoom = (f",zoompan=z='{zexpr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30"
+            if s.get("zoom") else ",scale=1080:1920:flags=lanczos")
     if s.get("photo"):
-        fr = int(s["d"] * 30)
-        fc.append(f"[{i}:v]scale=2160:-2:flags=lanczos,zoompan=z='1+0.10*on/{fr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1440x1920:fps=30,"
-                  f"crop=1080:1920,format=yuv420p{g},setsar=1,fps=30,format=yuv420p,settb=AVTB[v{i}]")
+        run(["ffmpeg", "-v", "error", "-y", "-loop", "1", "-framerate", "30", "-t", str(s["d"]), "-i", s["src"],
+             "-vf", f"scale=1350:2400:force_original_aspect_ratio=increase:flags=lanczos,crop=1350:2400,"
+                    f"zoompan=z='1+{z if s.get('zoom') else 0.1}*on/{fr}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30,"
+                    f"format=yuv420p{g},setsar=1",
+             "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-an", proxy])
+        continue
+    sp = s.get("speed", 1.0)
+    zh, cy, cx = s.get("zh", 1920), s.get("cy", 0), s.get("cx", "(iw-1080)/2")
+    prim, rng = probe_color(s["src"])
+    if prim == "smpte432":   # iPhone Display-P3 full range -> standard bt709
+        conv = "colorspace=all=bt709:iall=bt601-6-625:iprimaries=smpte432:itrc=bt709:irange=pc:range=tv:format=yuv420p"
+    elif rng == "pc":
+        conv = "scale=in_range=pc:out_range=tv,format=yuv420p"
     else:
-        zh, cy, cx = s.get("zh", 1920), s.get("cy", 0), s.get("cx", "(iw-1080)/2")
-        prim, rng = probe_color(s["src"])
-        if prim == "smpte432":   # iPhone Display-P3 full range -> standard bt709
-            conv = "colorspace=all=bt709:iall=bt601-6-625:iprimaries=smpte432:itrc=bt709:irange=pc:range=tv:format=yuv420p"
-        elif rng == "pc":        # already bt709, only full -> tv range
-            conv = "scale=in_range=pc:out_range=tv,format=yuv420p"
-        else:
-            conv = "format=yuv420p"
-        proxy = f"{capdir}/seg{i}.mov"
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["ss"]), "-t", str(s["d"]), "-i", s["src"],
-                        "-vf", f"scale=-2:{zh}:flags=lanczos,crop=1080:1920:{cx}:{cy},{conv}{g},setsar=1,fps=30,format=yuv420p",
-                        "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-c:a", "pcm_s16le", "-ar", "48000", proxy], check=True)
-        fc.append(f"[{i}:v]fps=30,format=yuv420p,settb=AVTB[v{i}]")
-    a = aidx.get(i, i)
-    fc.append(f"[{a}:a]aformat=sample_rates=48000:channel_layouts=stereo,highpass=f=90,dynaudnorm=f=300:g=21:m=6:p=0.5[a{i}]")
-pv, pa = "v0", "a0"
+        conv = "format=yuv420p"
+    k = 1.25  # oversample so a push-in stays sharp
+    base = (f"scale=-2:{int(zh*k)}:flags=lanczos,crop={int(1080*k)}:{int(1920*k)}:"
+            f"{cx if isinstance(cx, str) else int(cx*k)}:{int(cy*k)}")
+    speed = f"setpts=PTS/{sp}," if sp != 1 else ""
+    run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["ss"]), "-t", str(s["d"] * sp), "-i", s["src"],
+         "-vf", f"{speed}fps=30,{base},{conv}{zoom}{g},setsar=1,format=yuv420p",
+         "-t", str(s["d"]), "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-an", proxy])
+
+cmd = ["ffmpeg", "-v", "error", "-y"]
+for i in range(n): cmd += ["-i", f"{work}/seg{i}.mov"]
+capbase = n
+for i in range(n): cmd += ["-loop", "1", "-t", f"{total}", "-i", f"{work}/cap{i}.png"]
+fc = [f"[{i}:v]fps=30,format=yuv420p,settb=AVTB[v{i}]" for i in range(n)]
+pv = "v0"
 for i in range(1, n):
-    td = segs[i].get("td", 0.4); tr = segs[i].get("tr", "fade")
-    fc.append(f"[{pv}][v{i}]xfade=transition={tr}:duration={td}:offset={starts[i]:.3f}[x{i}]")
-    fc.append(f"[{pa}][a{i}]acrossfade=d={td}:c1=tri:c2=tri[y{i}]")
-    pv, pa = f"x{i}", f"y{i}"
+    fc.append(f"[{pv}][v{i}]xfade=transition={segs[i].get('tr', 'fade')}:duration={segs[i].get('td', 0.4)}:offset={starts[i]:.3f}[x{i}]")
+    pv = f"x{i}"
+cap_times = []
 for i, s in enumerate(segs):
     if not (s.get("cap") or s.get("title")): continue
-    a = starts[i] + (0.5 if i else 0.3)
+    a = starts[i] + (0.45 if i else 0.25)
     b = (starts[i + 1] if i < n - 1 else total - 1.0) - 0.25
+    cap_times.append(a)
     fc.append(f"[{capbase+i}:v]format=rgba,fade=in:st={a:.2f}:d=0.3:alpha=1,fade=out:st={b:.2f}:d=0.3:alpha=1[c{i}]")
-    fc.append(f"[{pv}][c{i}]overlay=shortest=0:eof_action=pass[o{i}]"); pv = f"o{i}"
-fc.append(f"[{pv}]fade=in:st=0:d=0.4,fade=out:st={total-0.8:.2f}:d=0.8,format=yuv420p[v]")
-# --- AI voiceover: each line starts with its segment; ambient sound ducks under the voice ---
-vos = [i for i, s in enumerate(segs) if s.get("vo") and os.path.exists(f"{capdir}/vo{i}.mp3")]
-if vos:
-    vbase = capbase + n
-    labels = []
-    for j, i in enumerate(vos):
-        f = f"{capdir}/vo{i}.mp3"; cmd += ["-i", f]
-        dur = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]))
-        at = starts[i] + (0.45 if i else 0.6)
-        nxt = (starts[vos[j + 1]] + 0.45) if j < len(vos) - 1 else total - 0.5
-        tempo = min(max(dur / (nxt - at - 0.15), spec.get("vo_tempo", 1.12)), 1.4)
-        if dur / tempo > nxt - at: print(f"WARNING: voice line {i} is too long for its scene ({dur/tempo:.1f}s > {nxt-at:.1f}s)")
-        fc.append(f"[{vbase+j}:a]atempo={tempo:.3f},aresample=48000,aformat=channel_layouts=stereo,adelay={int(at*1000)}:all=1[vo{j}]")
-        labels.append(f"[vo{j}]")
-    fc.append(f"{''.join(labels)}amix=inputs={len(vos)}:normalize=0:dropout_transition=0,apad=whole_dur={total},loudnorm=I=-15:TP=-1.5,apad=whole_dur={total},asplit[voa][vob]")
-    fc.append(f"[{pa}]loudnorm=I=-21:TP=-2:LRA=7,apad=whole_dur={total}[amb]")  # apad after loudnorm keeps its last ~3 s from being dropped
-    # pad both sides to full length: sidechaincompress stops at the shorter input, which cut the last line short
-    fc.append(f"[amb]apad=whole_dur={total}[ambp]")
-    fc.append("[ambp][voa]sidechaincompress=threshold=0.015:ratio=10:attack=40:release=450[duck]")
-    fc.append(f"[duck][vob]amix=inputs=2:normalize=0:duration=longest,apad=whole_dur={total},atrim=0:{total},alimiter=limit=0.9,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
-else:
-    fc.append(f"[{pa}]loudnorm=I=-18:TP=-1.5:LRA=7,afade=in:d=0.4,afade=out:st={total-1.2:.2f}:d=1.2[a]")
-cmd += ["-filter_complex", ";".join(fc), "-map", "[v]", "-map", "[a]", "-t", f"{total}",
-        "-c:v", "libx264", "-preset", "slow", "-crf", "21", "-maxrate", "12M", "-bufsize", "24M",
-        "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
-        "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-movflags", "+faststart", out]
-subprocess.run(cmd, check=True)
-print("total", round(total, 2), "starts", [round(x, 1) for x in starts])
+    # slide up 50 px into place while fading in
+    fc.append(f"[{pv}][c{i}]overlay=x=0:y='50*max(0\\,1-(t-{a:.2f})/0.35)':shortest=0:eof_action=pass[o{i}]"); pv = f"o{i}"
+fc.append(f"[{pv}]fade=in:st=0:d=0.3,fade=out:st={total-0.8:.2f}:d=0.8,format=yuv420p[v]")
+if not REUSE: run(cmd + ["-filter_complex", ";".join(fc), "-map", "[v]", "-t", f"{total}", "-c:v", "libx264", "-preset", "veryfast",
+           "-crf", "14", "-pix_fmt", "yuv420p", f"{work}/video_only.mp4"])
+
+# ---------------- audio: mixed in numpy (precise, no filter-graph EOF surprises) ----------------
+amb_db = spec.get("ambient_db", -30 if MUSIC else -24)
+amb = np.zeros((N, 2), np.float32)
+for i, s in enumerate(segs):
+    src, ss = (s["asrc"], s["ass"]) if s.get("photo") else (s["src"], s["ss"])
+    if s.get("speed", 1.0) != 1.0 or s.get("mute"): continue
+    x = load_audio(src, ss, s["d"])
+    x = at_db(x, amb_db + s.get("amb", 0))
+    td_in = segs[i].get("td", 0.4) if i else 0.05
+    td_out = segs[i + 1].get("td", 0.4) if i < n - 1 else 0.6
+    e = np.ones(len(x), np.float32)
+    a_, b_ = int(td_in * SR), int(td_out * SR)
+    if a_: e[:a_] = np.linspace(0, 1, a_)
+    if b_: e[-b_:] = np.minimum(e[-b_:], np.linspace(1, 0, b_))
+    x *= e[:, None]
+    p = int(starts[i] * SR); m = min(len(x), N - p)
+    amb[p:p + m] += x[:m]
+
+voice = np.zeros((N, 2), np.float32)
+vos = [i for i, s in enumerate(segs) if s.get("vo") and os.path.exists(f"{work}/vo{i}.mp3")]
+for j, i in enumerate(vos):
+    f = f"{work}/vo{i}.mp3"
+    dur = float(subprocess.check_output(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]))
+    at = starts[i] + (0.45 if i else 0.6)
+    nxt = (starts[vos[j + 1]] + 0.45) if j < len(vos) - 1 else total - 0.9
+    tempo = min(max(dur / max(nxt - at - 0.15, 0.1), spec.get("vo_tempo", 1.0)), 1.3)
+    if dur / tempo > nxt - at: print(f"WARNING: voice line {i} is too long for its scene ({dur/tempo:.1f}s > {nxt-at:.1f}s)")
+    x = at_db(load_audio(f, tempo=tempo), -17)
+    p = int(at * SR); m = min(len(x), N - p); voice[p:p + m] += x[:m]
+
+# ducking envelope from the voice: 1 where silent, -> duck where speaking (40 ms attack, 450 ms release)
+lvl = np.abs(voice).max(1)
+active = np.convolve(lvl > 0.01, np.ones(int(0.05 * SR)) / (0.05 * SR), "same") > 0.05
+duck = np.ones(N, np.float32); g_ = 1.0
+a_c, r_c = np.exp(-1 / (0.04 * SR)), np.exp(-1 / (0.45 * SR))
+for k_ in range(0, N, 64):  # block-wise for speed
+    target = 0.0 if active[k_] else 1.0
+    c = a_c if target < g_ else r_c
+    g_ = target + (g_ - target) * c ** 64
+    duck[k_:k_ + 64] = g_
+
+mix = amb * (0.45 + 0.55 * duck)[:, None]          # real sound dips ~7 dB under the voice
+if MUSIC:
+    m = load_audio(MUSIC)
+    if spec.get("beat_align"):
+        import librosa
+        y = m.mean(1)
+        tempo_, beats = librosa.beat.beat_track(y=y, sr=SR, units="time")
+        if len(beats): m = m[int(beats[0] * SR):]
+        print("music beat", float(np.atleast_1d(tempo_)[0]), "first beat", round(float(beats[0]), 2) if len(beats) else None)
+    reps = int(np.ceil(N / max(len(m), 1)))
+    m = fit(np.vstack([m] * reps), N)
+    m = at_db(m, spec.get("music_db", -22))
+    fi, fo = int(0.6 * SR), int(2.0 * SR)
+    m[:fi] *= np.linspace(0, 1, fi)[:, None]; m[-fo:] *= np.linspace(1, 0, fo)[:, None]
+    mix += m * (0.30 + 0.70 * duck)[:, None]        # music dips ~10 dB under the voice
+mix += voice
+
+sfx_events = []
+auto = spec.get("sfx")
+for i, s in enumerate(segs):
+    if i and (s.get("sfx") or (auto and s.get("tr", "fade") in ("smoothleft", "smoothright", "smoothup", "smoothdown", "slideup", "slideleft", "slideright", "zoomin", "circleopen", "hblur", "wipeleft", "wiperight"))):
+        sfx_events.append((starts[i] - 0.15, s.get("sfx") or "whoosh", -1))
+    if s.get("hit"): sfx_events.append((starts[i] + s.get("hit_at", 0.0), s["hit"], 0))
+if auto:
+    for a in cap_times: sfx_events.append((a, "pop", -10))
+for t0, name, gdb in sfx_events:
+    x = sf.read(f"{SFX_DIR}/{name}.wav", dtype="float32")[0]
+    if name == "riser": t0 -= len(x) / SR - 0.1   # a riser ends on the cut
+    x *= 10 ** ((spec.get("sfx_db", -4) + gdb) / 20)
+    p = max(int(t0 * SR), 0); m_ = min(len(x), N - p)
+    if m_ > 0: mix[p:p + m_] += x[:m_]
+
+# master: loudness to about -16 dBFS RMS (Reels/Shorts level), gentle soft-knee limiter, ceiling -2 dBFS
+fo = int(1.2 * SR); mix[-fo:] *= np.linspace(1, 0, fo)[:, None]
+mix *= 10 ** ((spec.get("master_db", -16) - rms_db(mix)) / 20)
+T, C = 0.55, 10 ** (-2 / 20)   # knee start, ceiling
+a_ = np.abs(mix)
+over = a_ > T
+mix[over] = np.sign(mix[over]) * (T + (C - T) * np.tanh((a_[over] - T) / (C - T)))
+print("master: limited", round(100 * over.mean(), 2), "% of samples")
+sf.write(f"{work}/mix.wav", mix, SR)
+
+run(["ffmpeg", "-v", "error", "-y", "-i", f"{work}/video_only.mp4", "-i", f"{work}/mix.wav",
+     "-map", "0:v", "-map", "1:a", "-c:v", "libx264", "-preset", "slow", "-crf", "20", "-maxrate", "12M", "-bufsize", "24M",
+     "-pix_fmt", "yuv420p", "-colorspace", "bt709", "-color_primaries", "bt709", "-color_trc", "bt709", "-color_range", "tv",
+     "-c:a", "aac", "-b:a", "192k", "-t", f"{total}", "-movflags", "+faststart", out])
+print("total", total, "starts", [round(x, 2) for x in starts], "sfx", len(sfx_events), "voice lines", len(vos))
