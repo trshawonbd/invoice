@@ -25,8 +25,9 @@ and hand him finished files, not options. Never present work as checked when it 
 ## Sound taste: he decides, you cannot hear
 
 You cannot hear audio, only measure it. He found the synthesized transition SFX and the ACE-Step (CPU, 8-step)
-track ugly. So by default: **no SFX, no generated music** (`"sfx": false`, no `music`). Deliver voice + real sound,
-ready for him to add a licensed song inside Instagram/Facebook/YouTube. Use music only from a track he picked and
+track ugly. So by default: **no SFX, no generated music, no real background sound** (`"sfx": false`, no `music`,
+`"ambient": false`). He also found the phone's background sound (wind, crowd talk) bad even after talk removal.
+Deliver voice only, ready for him to add a licensed song inside Instagram/Facebook/YouTube. Use music only from a track he picked and
 sent (royalty-free, e.g. YouTube Audio Library / Pixabay Music): then set `music`, `bpm`, `beat_align` and cut on its beat.
 Offer ACE-Step only as short samples for him to choose from, never straight into a video.
 

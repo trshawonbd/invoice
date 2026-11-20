@@ -11,6 +11,7 @@ Top-level spec keys
   music_db   music level in dBFS RMS (default -22)      ambient_db  real-sound level (default -24, -30 with music)
   bpm        tempo; a scene may then give "beats" instead of "d" so cuts land on the beat
   beat_align true = trim the music so its first beat lands at 0 s (needs librosa)
+  ambient    false = drop all real sound (voice only, music added in the app)
   remove_talk  default true: scenes whose real sound has people talking take ambience from a talk-free part of the clip
   sfx        true = automatic whoosh on moving transitions and a soft pop when captions appear
   vo_tempo   minimum voice speed-up (default 1.0)
@@ -182,7 +183,7 @@ amb = np.zeros((N, 2), np.float32)
 for i, s in enumerate(segs):
     src, ss = (s["asrc"], s["ass"]) if s.get("photo") else (s["src"], s["ss"])
     if s.get("amb_src"): src, ss = s["amb_src"], s.get("amb_ss", 0.0)   # real sound from another clip of the same place
-    if s.get("mute"): continue   # slow-mo / time-lapse scenes keep their real sound at normal speed (waves, wind)
+    if s.get("mute") or spec.get("ambient") is False: continue   # slow-mo / time-lapse scenes keep their real sound at normal speed (waves, wind)
     if spec.get("remove_talk", True):   # people talking in the background: borrow talk-free ambience from the same clip
         new_ss = speech_free_start(src, ss, s["d"])
         if new_ss is None:   # borrow talk-free outdoor sound from the nearest other scene's clip
