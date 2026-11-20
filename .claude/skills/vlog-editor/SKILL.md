@@ -121,6 +121,8 @@ Fix every `WARNING: voice line ... too long` before delivering.
 - `ffprobe`: audio and video the same length.
 - Decode the audio (stereo, not a mono downmix): peak < 1.0, RMS ≈ -16 dB, no silent seconds where sound is expected.
 - The last voice line ends before the fade.
+- Background talking: the builder swaps talk-free ambience in automatically (silero-vad, `pip install silero-vad`).
+  Then run silero-vad on the final MP4: every speech span must sit inside a voiceover line, nothing else.
 - Say plainly what you cannot verify: you cannot hear, only measure.
 
 ## Deliver

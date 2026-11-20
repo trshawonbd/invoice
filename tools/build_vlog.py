@@ -11,6 +11,7 @@ Top-level spec keys
   music_db   music level in dBFS RMS (default -22)      ambient_db  real-sound level (default -24, -30 with music)
   bpm        tempo; a scene may then give "beats" instead of "d" so cuts land on the beat
   beat_align true = trim the music so its first beat lands at 0 s (needs librosa)
+  remove_talk  default true: scenes whose real sound has people talking take ambience from a talk-free part of the clip
   sfx        true = automatic whoosh on moving transitions and a soft pop when captions appear
   vo_tempo   minimum voice speed-up (default 1.0)
 
@@ -149,11 +150,43 @@ if not REUSE: run(cmd + ["-filter_complex", ";".join(fc), "-map", "[v]", "-t", f
            "-crf", "14", "-pix_fmt", "yuv420p", f"{work}/video_only.mp4"])
 
 # ---------------- audio: mixed in numpy (precise, no filter-graph EOF surprises) ----------------
+_speech_cache = {}
+def speech_spans(src):
+    """seconds where people talk in a clip (silero-vad, threshold 0.3, 0.25 s margin)"""
+    if src not in _speech_cache:
+        import torch, warnings
+        warnings.filterwarnings("ignore")
+        from silero_vad import load_silero_vad, get_speech_timestamps
+        global _vad
+        if "_vad" not in globals(): _vad = load_silero_vad()
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-i", src, "-ac", "1", "-ar", "16000", "-f", "f32le", "-"],
+                             capture_output=True, check=True).stdout
+        w = torch.from_numpy(np.frombuffer(raw, np.float32).copy())
+        ts = get_speech_timestamps(w, _vad, sampling_rate=16000, threshold=0.3, min_speech_duration_ms=120, return_seconds=True)
+        _speech_cache[src] = (len(w) / 16000, [(t["start"] - 0.25, t["end"] + 0.25) for t in ts])
+    return _speech_cache[src]
+
+def speech_free_start(src, ss, dur):
+    """ss if [ss, ss+dur] has no talking, else the nearest talk-free window in the same clip, else None"""
+    length, spans = speech_spans(src)
+    free = lambda a: a >= 0 and a + dur <= length and all(e <= a or st >= a + dur for st, e in spans)
+    if free(ss): return ss
+    for off in np.arange(0.25, length, 0.25):
+        for a in (ss - off, ss + off):
+            if free(a): return float(a)
+    return None
+
 amb_db = spec.get("ambient_db", -30 if MUSIC else -24)
 amb = np.zeros((N, 2), np.float32)
 for i, s in enumerate(segs):
     src, ss = (s["asrc"], s["ass"]) if s.get("photo") else (s["src"], s["ss"])
     if s.get("mute"): continue   # slow-mo / time-lapse scenes keep their real sound at normal speed (waves, wind)
+    if spec.get("remove_talk", True):   # people talking in the background: borrow talk-free ambience from the same clip
+        new_ss = speech_free_start(src, ss, s["d"])
+        if new_ss is None:
+            print(f"scene {i}: talking everywhere in {os.path.basename(src)}, real sound muted"); continue
+        if abs(new_ss - ss) > 1e-3: print(f"scene {i}: talking removed, ambience taken from {new_ss:.1f}s instead of {ss:.1f}s")
+        ss = new_ss
     x = load_audio(src, ss, s["d"])
     x = at_db(x, amb_db + s.get("amb", 0))
     td_in = segs[i].get("td", 0.4) if i else 0.05
