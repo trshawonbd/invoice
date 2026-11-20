@@ -125,10 +125,18 @@ Fix every `WARNING: voice line ... too long` before delivering.
   Then run silero-vad on the final MP4: every speech span must sit inside a voiceover line, nothing else.
 - Say plainly what you cannot verify: you cannot hear, only measure.
 
-## Deliver
+## Deliver (with an SEO pack every time)
 
-SendUserFile the MP4, then in Bangla: what changed, a title (max one emoji), 2-3 line description, 3-5 hashtags,
-the reminder to set the YouTube video language to **Bengali**, and anything you could not check.
+SendUserFile the MP4, then in Bangla: what changed and anything you could not check. Also write and send
+`output/seo/<name>_seo.md`, `<name>_bn.srt` (subtitles from the voice lines and their real timings) and
+`<name>_cover.jpg` (a frame with the title). The SEO pack has:
+- **YouTube Shorts:** title (Bangla hook + a few English search words, e.g. "| Europe Family Vlog", one emoji max,
+  under ~60 characters), 3-line Bangla description with keywords in the first line, 3-5 hashtags incl. #shorts,
+  10-15 tags mixing Bangla and Banglish/English searches, settings: language Bengali, upload the SRT,
+  category, and a pinned question comment to drive replies.
+- **Facebook / Instagram:** caption with a question or "save this" call to action, 5-8 hashtags.
+- **When to post:** for viewers in Bangladesh, 8-11 pm Bangladesh time (4 hours ahead of Estonia in winter).
+- Never put the town or country in titles or tags (house rule); "Europe/Nordic" only.
 
 ## Spec example
 
