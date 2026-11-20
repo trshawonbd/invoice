@@ -1,0 +1,120 @@
+{
+ "grade": "eq=contrast=1.07:saturation=1.16:gamma=1.02,colorbalance=rm=0.03:bm=-0.03",
+ "segs": [
+  {
+   "src": "clips/set3/IMG_1633.mov",
+   "ss": 0.3,
+   "d": 3.4,
+   "title": "ইউরোপে শরতের সকাল",
+   "sub": "একটু হাঁটা, এক কাপ কফি",
+   "vo": "ইউরোপে শরতের এক সকাল।"
+  },
+  {
+   "src": "clips/set3/IMG_1638.mov",
+   "ss": 0.6,
+   "d": 2.8,
+   "tr": "smoothup",
+   "cap": "হাঁটতে বের হলাম",
+   "vo": "একটু হাঁটতে বের হলাম।"
+  },
+  {
+   "src": "clips/set3/IMG_1639.mov",
+   "ss": 0.4,
+   "d": 2.8,
+   "tr": "dissolve",
+   "cap": "পথজুড়ে ঝরা পাতা",
+   "vo": "পথজুড়ে শুধু ঝরা পাতা।"
+  },
+  {
+   "src": "clips/set3/IMG_1634.jpg",
+   "photo": true,
+   "d": 2.4,
+   "asrc": "clips/set3/IMG_1633.mov",
+   "ass": 5.0,
+   "tr": "zoomin",
+   "td": 0.5
+  },
+  {
+   "src": "clips/set3/IMG_1636.mov",
+   "ss": 0.3,
+   "d": 3.7,
+   "tr": "fade",
+   "td": 0.6,
+   "cap": "শান্ত পুকুর, ঠান্ডা বাতাস",
+   "vo": "পাশেই শান্ত একটা পুকুর।"
+  },
+  {
+   "src": "clips/set3/IMG_1637.mov",
+   "ss": 0.5,
+   "d": 3.2,
+   "tr": "smoothleft",
+   "cap": "মেঘলা দিন, তবু মন ভালো",
+   "vo": "আকাশ মেঘলা, তবু মনটা ভালো।"
+  },
+  {
+   "src": "clips/set3/IMG_1641.mov",
+   "ss": 2.6,
+   "d": 4.0,
+   "tr": "fade",
+   "cap": "পথের ধারে কফি মেশিন!",
+   "vo": "হঠাৎ পথের ধারে একটা কফি মেশিন!"
+  },
+  {
+   "src": "clips/set3/IMG_1642.mov",
+   "ss": 0.4,
+   "d": 3.4,
+   "tr": "circleopen",
+   "td": 0.5,
+   "cap": "কোনটা নেব?",
+   "vo": "কোনটা নেব? আচ্ছা, এটাই।"
+  },
+  {
+   "src": "clips/set3/IMG_1643.mov",
+   "ss": 0.2,
+   "d": 2.4,
+   "tr": "slideup",
+   "td": 0.3,
+   "cap": "এটাই!",
+   "zh": 2100,
+   "cy": 180
+  },
+  {
+   "src": "clips/set3/IMG_1645.mov",
+   "ss": 9.0,
+   "d": 3.5,
+   "tr": "hblur",
+   "grade": "eq=gamma=1.12",
+   "cap": "কফি তৈরি হচ্ছে..."
+  },
+  {
+   "src": "clips/set3/IMG_1646.mov",
+   "ss": 3.8,
+   "d": 3.0,
+   "tr": "dissolve",
+   "grade": "eq=gamma=1.12",
+   "cap": "গরম কফি রেডি",
+   "vo": "গরম গরম কফি রেডি।"
+  },
+  {
+   "src": "clips/set3/IMG_1647.mov",
+   "ss": 0.2,
+   "d": 1.9,
+   "tr": "smoothleft",
+   "td": 0.3,
+   "zh": 2300,
+   "cy": 0,
+   "cap": "ঢাকনাটা নিয়ে নিলাম",
+   "vo": "ঠান্ডা সকালে এক কাপ কফি, এটুকুই তো সুখ।"
+  },
+  {
+   "src": "clips/set3/IMG_1648.mov",
+   "ss": 0.1,
+   "d": 3.7,
+   "tr": "fade",
+   "td": 0.5,
+   "cap": "ঠান্ডা সকালে এক কাপ সুখ",
+   "cx": 0
+  }
+ ],
+ "vo_tempo": 1.0
+}

@@ -91,7 +91,20 @@ Match a shaded scene to sunny neighbours with a per-scene `grade`.
 `tools/tts.py` makes the lines with Google's free Bangla voice (female; needs host `translate.google.com`).
 Only the voiceover text is sent out. Microsoft's voices (edge-tts) do not work here: the proxy blocks WebSockets.
 
-### Shawon's own voice (he consented and supplied the recording)
+### Shawon's own voice: ElevenLabs (default, best quality)
+
+He has an ElevenLabs Starter plan; the API key is saved on the "Vlog video editing" environment and the
+proxy injects it for `api.elevenlabs.io` (never ask for or print the key). His cloned voice is
+"Shawon (vlog)", id `n9Y04pWSwHXQNHhBhv2s`, made from his own recording with his consent.
+
+```bash
+python3 tools/tts_elevenlabs.py tools/specs/<name>.json $W     # writes vo<i>.mp3 in his voice
+```
+Then make captions and build as usual; set `"vo_tempo": 1.0` in the spec so his real delivery is not sped up.
+Model `eleven_v4` (Bangla). Starter allows `mp3_44100_128` only, and 40,000 characters a month
+(a 35 s vlog uses about 90). Check usage with `GET /v1/user/subscription`.
+
+### Fallback: free local re-voicing (much weaker)
 
 `tools/clone_voice.py` re-voices those lines in his voice colour with OpenVoice V2, locally on CPU.
 Use only his own voice, from a recording he gave. Keep the built-in AI watermark on.
