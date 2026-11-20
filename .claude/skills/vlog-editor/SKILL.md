@@ -88,9 +88,28 @@ Match a shaded scene to sunny neighbours with a per-scene `grade`.
 
 ## Voice
 
-`tools/tts.py` uses Google's free Bangla voice (one female voice, needs host `translate.google.com`).
+`tools/tts.py` makes the lines with Google's free Bangla voice (female; needs host `translate.google.com`).
 Only the voiceover text is sent out. Microsoft's voices (edge-tts) do not work here: the proxy blocks WebSockets.
-For a better or male voice he would need a paid TTS API key; ask before going that way.
+
+### Shawon's own voice (he consented and supplied the recording)
+
+`tools/clone_voice.py` re-voices those lines in his voice colour with OpenVoice V2, locally on CPU.
+Use only his own voice, from a recording he gave. Keep the built-in AI watermark on.
+
+```bash
+pip install -q torch torchaudio librosa soundfile inflect unidecode eng_to_ipa pypinyin cn2an jieba wavmark==0.0.3 whisper-timestamped pydub
+pip download --no-deps -d $W/pip "git+https://github.com/myshell-ai/OpenVoice.git" && unzip -q $W/pip/*.zip -d $W/src
+# converter/config.json + converter/checkpoint.pth from huggingface.co/myshell-ai/OpenVoiceV2 into $W/ckpt
+# (hosts huggingface.co and us.aws.cdn.hf.co)
+ffmpeg -i <his recording> -af "highpass=f=70,afftdn=nr=10,loudnorm=I=-20" -ar 22050 -ac 1 $W/ref.wav
+# convert each vo<i>.mp3 from tts.py to 22050 Hz mono vo<i>.wav in $W/in, then:
+HF_HUB_DISABLE_XET=1 python3 tools/clone_voice.py $W/src/MyShell-OpenVoice $W/ckpt $W/ref.wav $W/in $W/out
+# convert $W/out/vo<i>.wav back to vo<i>.mp3 in the captions folder, then run build_vlog.py as usual
+```
+
+Check it worked: the median pitch (librosa.pyin) of the output should be near his recording (~105 Hz),
+not the Google voice (~270 Hz). Rhythm and pronunciation stay Google's, so tell him it is "close", not identical.
+The session must not be in Auto mode for the clone step; ask him to switch to Accept edits and approve it.
 
 ## Voiceover writing
 
