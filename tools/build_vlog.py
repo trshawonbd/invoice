@@ -28,6 +28,8 @@ Scene keys
   cap/title/sub/tag    on-screen text (rendered by make_captions.cjs); text slides up and fades in
   vo         voiceover line (vo<i>.mp3 in work_dir, made by tts_elevenlabs.py / tts.py)
   photo, asrc, ass     still image with slow zoom; real sound borrowed from another clip
+  freeze     seconds to hold the scene's last frame (freeze frame + text)
+  jcut       seconds this scene's real sound starts before its picture (J-cut)
   zh, cy, cx crop control to keep faces or signs out of frame
 """
 import json, os, subprocess, sys
@@ -65,10 +67,16 @@ def probe_color(path):
     return d.get("color_primaries", ""), d.get("color_range", "")
 
 
-def load_audio(path, ss=0.0, dur=None, tempo=1.0):
+def src_fps(path):
+    r = subprocess.check_output(["ffprobe", "-v", "error", "-select_streams", "v:0", "-show_entries", "stream=r_frame_rate",
+                                 "-of", "csv=p=0", path], text=True).strip().split(",")[0].split("/")
+    return float(r[0]) / float(r[1] if len(r) > 1 else 1)
+
+
+def load_audio(path, ss=0.0, dur=None, tempo=1.0, extra=""):
     """decode any file to 48 kHz stereo float32 numpy"""
-    cmd = ["ffmpeg", "-v", "error", "-ss", str(ss)] + (["-t", str(dur * tempo)] if dur else []) + ["-i", path]
-    af = [f"atempo={tempo}"] if abs(tempo - 1) > 1e-3 else []
+    cmd = ["ffmpeg", "-v", "error", "-ss", str(max(ss, 0))] + (["-t", str(dur * tempo)] if dur else []) + ["-i", path]
+    af = ([f"atempo={tempo}"] if abs(tempo - 1) > 1e-3 else []) + ([extra] if extra else [])
     cmd += (["-af", ",".join(af)] if af else []) + ["-ac", "2", "-ar", str(SR), "-f", "f32le", "-"]
     raw = subprocess.run(cmd, capture_output=True, check=True).stdout
     return np.frombuffer(raw, np.float32).reshape(-1, 2).copy()
@@ -124,9 +132,12 @@ for i, s in enumerate([] if REUSE else segs):
     k = 1.25  # oversample so a push-in stays sharp
     base = (f"scale=-2:{int(zh*k)}:flags=lanczos,crop={int(1080*k)}:{int(1920*k)}:"
             f"{cx if isinstance(cx, str) else int(cx*k)}:{int(cy*k)}")
-    speed = f"setpts=PTS/{sp}," if sp != 1 else ""
-    run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["ss"]), "-t", str(s["d"] * sp), "-i", s["src"],
-         "-vf", f"{speed}fps=30,{base},{conv}{zoom}{g},setsar=1,format=yuv420p",
+    fz = s.get("freeze", 0.0)
+    smooth = "minterpolate=fps=60:mi_mode=blend," if sp < 1 and src_fps(s["src"]) < 50 else ""
+    speed = f"{smooth}setpts=PTS/{sp}," if sp != 1 else ""
+    hold = f",tpad=stop_mode=clone:stop_duration={fz}" if fz else ""
+    run(["ffmpeg", "-v", "error", "-y", "-ss", str(s["ss"]), "-t", str((s["d"] - fz) * sp), "-i", s["src"],
+         "-vf", f"{speed}fps=30,{base},{conv}{zoom}{g}{hold},setsar=1,format=yuv420p",
          "-t", str(s["d"]), "-c:v", "libx264", "-preset", "veryfast", "-crf", "12", "-an", proxy])
 
 cmd = ["ffmpeg", "-v", "error", "-y"]
@@ -141,7 +152,7 @@ for i in range(1, n):
 cap_times = []
 for i, s in enumerate(segs):
     if not (s.get("cap") or s.get("title")): continue
-    a = starts[i] + (0.45 if i else 0.25)
+    a = starts[i] + (spec.get("cap_delay", 0.45) if i else 0.25)
     b = (starts[i + 1] if i < n - 1 else total - 1.0) - 0.25
     cap_times.append(a)
     fc.append(f"[{capbase+i}:v]format=rgba,fade=in:st={a:.2f}:d=0.3:alpha=1,fade=out:st={b:.2f}:d=0.3:alpha=1[c{i}]")
@@ -198,7 +209,9 @@ for i, s in enumerate(segs):
             print(f"scene {i}: no talk-free ambience found, real sound muted"); continue
         if abs(new_ss - ss) > 1e-3: print(f"scene {i}: talking removed, ambience taken from {new_ss:.1f}s instead of {ss:.1f}s")
         ss = new_ss
-    x = load_audio(src, ss, s["d"])
+    lead = s.get("jcut", 0.0) if i else 0.0      # J-cut: this scene's sound starts before its picture
+    x = load_audio(src, ss - lead, s["d"] + lead,
+                   extra=spec.get("amb_clean", "highpass=f=100,afftdn=nr=12:nf=-40,lowpass=f=15000"))
     x = at_db(x, amb_db + s.get("amb", 0))
     td_in = segs[i].get("td", 0.4) if i else 0.05
     td_out = segs[i + 1].get("td", 0.4) if i < n - 1 else 0.6
@@ -207,7 +220,7 @@ for i, s in enumerate(segs):
     if a_: e[:a_] = np.linspace(0, 1, a_)
     if b_: e[-b_:] = np.minimum(e[-b_:], np.linspace(1, 0, b_))
     x *= e[:, None]
-    p = int(starts[i] * SR); m = min(len(x), N - p)
+    p = int((starts[i] - lead) * SR); m = min(len(x), N - p)
     amb[p:p + m] += x[:m]
 
 sf.write(f"{work}/amb_only.wav", amb, SR)   # for the talk check after building

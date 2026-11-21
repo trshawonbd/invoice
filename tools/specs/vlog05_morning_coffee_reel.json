@@ -1,0 +1,133 @@
+{
+ "grade": "curves=master='0/0.05 0.25/0.27 0.5/0.52 0.75/0.76 1/0.96',colorbalance=rs=0.05:gs=0.02:bs=-0.04:rm=0.05:bm=-0.05:rh=0.03:bh=-0.04,eq=saturation=1.06:gamma=1.03,gblur=sigma=0.4",
+ "look": "",
+ "sfx": false,
+ "cap_delay": 0.12,
+ "cap_top": 860,
+ "cap_size": 80,
+ "segs": [
+  {
+   "src": "clips/set3/IMG_1645.mov",
+   "ss": 9.6,
+   "d": 2.0,
+   "speed": 0.5,
+   "zoom": "in",
+   "cap": "ইউরোপে সকালের কফি এভাবেও পাওয়া যায়!"
+  },
+  {
+   "src": "clips/set3/IMG_1638.mov",
+   "ss": 0.6,
+   "d": 1.5,
+   "speed": 1.5,
+   "jcut": 0.3,
+   "cap": "ইউরোপে আমার সকাল",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1633.mov",
+   "ss": 2.0,
+   "d": 1.6,
+   "zoom": "in",
+   "cap": "অফিসের আগে একটু হাঁটা",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1639.mov",
+   "ss": 0.5,
+   "d": 1.5,
+   "cap": "পায়ের নিচে ঝরা পাতা",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1640.mov",
+   "ss": 8.0,
+   "d": 1.6,
+   "zoom": "out",
+   "cap": "শরতের রঙ",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1641.mov",
+   "ss": 3.0,
+   "d": 1.6,
+   "cap": "আরে, কফি মেশিন!",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1642.mov",
+   "ss": 2.5,
+   "d": 1.6,
+   "tr": "hblur",
+   "td": 0.3,
+   "jcut": 0.3,
+   "zh": 2100,
+   "cy": 180,
+   "cap": "কফি ছাড়া অফিস? অসম্ভব!"
+  },
+  {
+   "src": "clips/set3/IMG_1643.mov",
+   "ss": 0.8,
+   "d": 1.4,
+   "zh": 2100,
+   "cy": 180,
+   "cap": "এটাই নিলাম",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1645.mov",
+   "ss": 8.0,
+   "d": 1.0,
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1645.mov",
+   "ss": 9.0,
+   "d": 2.4,
+   "speed": 0.5,
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1646.mov",
+   "ss": 3.6,
+   "d": 2.6,
+   "freeze": 1.0,
+   "cap": "এই মুহূর্তটাই আমার প্রিয়",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1647.mov",
+   "ss": 0.3,
+   "d": 1.0,
+   "zh": 2300,
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1648.mov",
+   "ss": 0.1,
+   "d": 3.5,
+   "cx": 0,
+   "cap": "চলো, অফিসে যাই",
+   "tr": "fade",
+   "td": 0.04
+  },
+  {
+   "src": "clips/set3/IMG_1638.mov",
+   "ss": 1.9,
+   "d": 2.5,
+   "cap": "কাল আবার দেখা হবে",
+   "tr": "fade",
+   "td": 0.04
+  }
+ ],
+ "master_db": -17.5
+}
